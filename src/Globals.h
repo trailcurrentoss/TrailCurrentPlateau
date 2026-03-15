@@ -1,28 +1,31 @@
 #pragma once
 #ifndef GLOBALS_H
 #define GLOBALS_H
-#define DEBUG 1 // This sets whether or not the Serial.println and Serial.print will even be compiled
-// Conditional definition for debugging if DEBUG is 1 then it will print to serial port.
-// If DEBUG = 0 then the lines will be removed by the compiler.
-#if DEBUG == 1
-#define debug(...) Serial.print(##__VA_ARGS__)
-#define debugln(x) Serial.println(x)
-#define debugw(...) Serial.write(##__VA_ARGS__)
-#define debugf(x, ...) Serial.printf(x, ##__VA_ARGS__)
-#else
-#define debug(...)
-#define debugln(...)
-#define debugw(...)
-#define debugf(x, ...)
-#endif
 
-struct trailer_connector_data_t {
-  bool tail_or_running_status;
-  bool left_turn_or_brake_status;
-  bool right_turn_or_brake_status; 
-  bool reverse_status; 
-  unsigned int electric_brake_status;
-  unsigned int twelve_volt_reading;
+#include <Arduino.h>
+
+enum MountingSurface : uint8_t {
+  MOUNT_FLOOR      = 0x00,
+  MOUNT_LEFT_WALL  = 0x01,
+  MOUNT_RIGHT_WALL = 0x02
+};
+
+struct leveling_config_t {
+  MountingSurface mounting;
+  uint16_t vehicle_length_cm;
+  uint16_t vehicle_width_cm;
+};
+
+struct leveling_data_t {
+  float pitch_deg;
+  float roll_deg;
+  int16_t front_back_diff_mm;
+  int16_t left_right_diff_mm;
+  uint8_t cal_sys;
+  uint8_t cal_gyro;
+  uint8_t cal_accel;
+  uint8_t cal_mag;
+  bool imu_connected;
 };
 
 #endif // GLOBALS_H

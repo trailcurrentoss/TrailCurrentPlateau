@@ -4,7 +4,7 @@ Vehicle leveling module that monitors trailer signals and controls leveling via 
 
 ## Hardware Overview
 
-- **Microcontroller:** ESP32-C6
+- **Microcontroller:** ESP32-S3
 - **Function:** Vehicle leveling control with CAN bus communication
 - **Key Features:**
   - CAN bus communication at 500 kbps
@@ -17,7 +17,7 @@ Vehicle leveling module that monitors trailer signals and controls leveling via 
 
 ### Components
 
-- **Microcontroller:** [Waveshare ESP32-C6-Zero](https://www.waveshare.com/esp32-c6-zero.htm?aff_id=Trailcurrent) — selected for its extensive documentation, small footprint, pre-soldered programming pins, castellations for direct PCB integration, and low power consumption
+- **Microcontroller:** [Waveshare ESP32-S3-Zero](https://www.waveshare.com/esp32-s3-zero.htm?aff_id=Trailcurrent) — selected for its extensive documentation, small footprint, pre-soldered programming pins, castellations for direct PCB integration, and low power consumption
 - **CAN Transceiver:** SN65HVD230
 - **Power:** Buck converter (12V step-down)
 - **Connectors:** JST XH 2.54 4-pin
@@ -26,9 +26,11 @@ Vehicle leveling module that monitors trailer signals and controls leveling via 
 
 | GPIO | Function |
 |------|----------|
-| 8 | RGB status LED |
-| 15 | CAN RX |
-| 14 | CAN TX |
+| 21 | RGB status LED |
+| 1 | I2C SDA (BNO055) |
+| 2 | I2C SCL (BNO055) |
+| 7 | CAN TX |
+| 8 | CAN RX |
 
 ### KiCAD Library Dependencies
 
@@ -74,26 +76,32 @@ pio run
 pio run -t upload
 
 # Upload via OTA (after initial flash)
-pio run -t upload --upload-port esp32c6-DEVICE_ID
+pio run -t upload --upload-port esp32s3-DEVICE_ID
 ```
 
 ### Firmware Dependencies
 
 This firmware depends on the following public libraries:
 
-- **[C6SuperMiniRgbLedLibrary](https://github.com/trailcurrentoss/C6SuperMiniRgbLedLibrary)** (v0.0.1) - RGB LED status indicator driver
-- **[Esp32C6OtaUpdateLibrary](https://github.com/trailcurrentoss/Esp32C6OtaUpdateLibrary)** (v0.0.1) - Over-the-air firmware update functionality
-- **[Esp32C6TwaiTaskBasedLibrary](https://github.com/trailcurrentoss/Esp32C6TwaiTaskBasedLibrary)** (v0.0.3) - CAN bus communication interface
+- **[ESP32ArduinoDebugLibrary](https://github.com/trailcurrentoss/ESP32ArduinoDebugLibrary)** - Debug macros
+- **[OtaUpdateLibraryWROOM32](https://github.com/trailcurrentoss/OtaUpdateLibraryWROOM32)** - Over-the-air firmware update functionality
+- **[TwaiTaskBasedLibraryWROOM32](https://github.com/trailcurrentoss/TwaiTaskBasedLibraryWROOM32)** - CAN bus communication interface
+- **[Adafruit BNO055](https://github.com/adafruit/Adafruit_BNO055)** (v1.6.3) - IMU sensor driver
+- **[Adafruit Unified Sensor](https://github.com/adafruit/Adafruit_Sensor)** (v1.1.14) - Sensor abstraction layer
 
 All dependencies are automatically resolved by PlatformIO during the build process.
 
 **WiFi Credentials (for OTA updates):**
-- Copy `src/Secrets.h.example` to `src/Secrets.h` and fill in your WiFi credentials
-- Never commit `Secrets.h` to version control (it's in `.gitignore`)
+- WiFi credentials are provisioned over the CAN bus (ID `0x01`) and stored in NVS
+- No hardcoded credentials or secrets files needed
 
 ### CAN Bus Protocol
 
-- **Receive ID `0x00`:** OTA update notifications - triggers firmware update when device ID matches
+- **Receive ID `0x00`:** OTA update trigger — initiates firmware update when device hostname matches
+- **Receive ID `0x01`:** WiFi credential provisioning — multi-frame protocol to store SSID/password in NVS
+- **Transmit ID `0x30`:** Tilt data (pitch/roll)
+- **Transmit ID `0x31`:** Corner height data
+- **Transmit ID `0x32`:** Status data
 - CAN speed: 500 kbps
 
 ### Trailer Signal Monitoring
@@ -122,7 +130,7 @@ The firmware tracks:
 ├── src/                          # Firmware source
 │   ├── Main.cpp                  # Main application
 │   ├── Globals.h                 # Debug macros and data structures
-│   └── Secrets.h.example         # WiFi credentials template
+│   └── wifiConfig.h              # CAN-based WiFi credential provisioning
 ├── platformio.ini                # Build configuration
 └── partitions.csv                # ESP32 flash partition layout
 ```

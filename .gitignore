@@ -26,6 +26,7 @@ Thumbs.db
 
 # Local development/agent files
 CLAUDE.md
+CLAUDE.MD
 .claude/
 
 # CRITICAL: Secrets - never commit credentials
