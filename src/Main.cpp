@@ -164,6 +164,7 @@ void sendLevelingData() {
     msg.identifier = CAN_ID_TILT_DATA;
     int16_t pitch100 = (int16_t)(data.pitch_deg * 100.0f);
     int16_t roll100 = (int16_t)(data.roll_deg * 100.0f);
+
     msg.data[0] = (pitch100 >> 8) & 0xFF;
     msg.data[1] = pitch100 & 0xFF;
     msg.data[2] = (roll100 >> 8) & 0xFF;
@@ -314,8 +315,9 @@ void setup() {
     cachedHostName = otaUpdate.getHostName();
     debugf("[OTA] Device hostname: %s\n", cachedHostName.c_str());
 
-    // IMU
+    // IMU — delay lets the ESP32-S3 I2C peripheral settle before first transaction
     Wire.begin(I2C_SDA, I2C_SCL);
+    delay(100);
 
     data.imu_connected = bno.begin();
     if (data.imu_connected) {
@@ -335,7 +337,7 @@ void setup() {
     // CAN bus
     TwaiTaskBased::onReceive(onCanRx);
     TwaiTaskBased::onTransmit(onCanTx);
-    if (TwaiTaskBased::begin(CAN_TX, CAN_RX, 500000)) {
+    if (TwaiTaskBased::begin(CAN_TX, CAN_RX, 500000, TWAI_MODE_NO_ACK)) {
         debugln("[CAN] Bus initialized");
     } else {
         debugln("[CAN] ERROR: Bus init failed");
