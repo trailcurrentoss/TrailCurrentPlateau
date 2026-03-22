@@ -43,7 +43,7 @@ Adafruit_BNO055 bno(55, 0x28, &Wire);
 // --- State ---
 leveling_config_t config;
 leveling_data_t data;
-bool calibrationSaved = false;
+bool hasStoredOffsets = false;   // true once valid offsets exist in NVS
 unsigned long lastLevelingMs = 0;
 unsigned long lastStatusMs = 0;
 unsigned long lastImuRetryMs = 0;
@@ -71,17 +71,6 @@ void loadLevelingConfig() {
            config.mounting, config.vehicle_length_cm, config.vehicle_width_cm);
 }
 
-void saveCalibrationOffsets() {
-    adafruit_bno055_offsets_t offsets;
-    bno.getSensorOffsets(offsets);
-    Preferences prefs;
-    prefs.begin("bno_cal", false);
-    prefs.putBytes("offsets", &offsets, sizeof(offsets));
-    prefs.putBool("valid", true);
-    prefs.end();
-    debugln("[IMU] Calibration offsets saved to NVS");
-}
-
 bool loadCalibrationOffsets() {
     Preferences prefs;
     prefs.begin("bno_cal", true);
@@ -99,7 +88,7 @@ bool loadCalibrationOffsets() {
 }
 
 // --- BNO055 axis remapping ---
-void applyAxisRemap(MountingSurface mount) {
+void applyAxisRemap(MountingSurface mount, adafruit_bno055_opmode_t targetMode) {
     bno.setMode(OPERATION_MODE_CONFIG);
     delay(25);
 
@@ -134,17 +123,41 @@ void applyAxisRemap(MountingSurface mount) {
             break;
     }
 
-    bno.setMode(OPERATION_MODE_NDOF);
+    bno.setMode(targetMode);
     delay(25);
+}
+
+// --- Save calibration with verification ---
+bool saveAndVerifyCalibration() {
+    adafruit_bno055_offsets_t written;
+    bno.getSensorOffsets(written);
+
+    Preferences prefs;
+    prefs.begin("bno_cal", false);
+    prefs.putBytes("offsets", &written, sizeof(written));
+    prefs.putBool("valid", true);
+
+    // Read back and verify
+    adafruit_bno055_offsets_t readback;
+    prefs.getBytes("offsets", &readback, sizeof(readback));
+    bool valid = prefs.getBool("valid", false);
+    prefs.end();
+
+    if (!valid || memcmp(&written, &readback, sizeof(written)) != 0) {
+        debugln("[IMU] Calibration save FAILED verification");
+        return false;
+    }
+
+    debugln("[IMU] Calibration offsets saved and verified");
+    return true;
 }
 
 // --- Leveling computation ---
 void computeLeveling() {
-    sensors_event_t event;
-    bno.getEvent(&event, Adafruit_BNO055::VECTOR_EULER);
+    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
 
-    data.pitch_deg = event.orientation.z;
-    data.roll_deg = event.orientation.y;
+    data.pitch_deg = atan2f(accel.x(), sqrtf(accel.y() * accel.y() + accel.z() * accel.z())) * RAD_TO_DEG;
+    data.roll_deg  = atan2f(accel.y(), accel.z()) * RAD_TO_DEG;
 
     float pitch_rad = data.pitch_deg * DEG_TO_RAD;
     float roll_rad = data.roll_deg * DEG_TO_RAD;
@@ -209,8 +222,7 @@ void sendStatusData() {
 
     uint8_t flags = 0;
     if (data.imu_connected) flags |= 0x01;
-    if (data.cal_sys == 3) flags |= 0x02;
-    flags |= 0x04;
+    if (hasStoredOffsets) flags |= 0x02;
 
     uint8_t calPacked = (data.cal_sys << 6) | (data.cal_gyro << 4) |
                         (data.cal_accel << 2) | data.cal_mag;
@@ -251,7 +263,8 @@ void handleLevelingConfigMessage(const uint8_t *data) {
             config.vehicle_length_cm = (data[2] << 8) | data[3];
             config.vehicle_width_cm = (data[4] << 8) | data[5];
 
-            applyAxisRemap(config.mounting);
+            applyAxisRemap(config.mounting,
+                           hasStoredOffsets ? OPERATION_MODE_ACCONLY : OPERATION_MODE_NDOF);
 
             if (data[6] == 0x01) {
                 saveLevelingConfig();
@@ -266,7 +279,14 @@ void handleLevelingConfigMessage(const uint8_t *data) {
             break;
         }
         case 0x03: {
-            debugln("[Config] Zero/tare requested (not yet implemented)");
+            debugln("[Config] Save calibration requested");
+            if (saveAndVerifyCalibration()) {
+                hasStoredOffsets = true;
+                applyAxisRemap(config.mounting, OPERATION_MODE_ACCONLY);
+                setLed(0, 40, 0);
+                debugln("[Config] Calibration saved — switched to ACCONLY");
+            }
+            sendStatusData();
             break;
         }
     }
@@ -322,8 +342,7 @@ void setup() {
     data.imu_connected = bno.begin();
     if (data.imu_connected) {
         debugln("[IMU] BNO055 detected");
-        bno.setExtCrystalUse(true);
-        loadCalibrationOffsets();
+        hasStoredOffsets = loadCalibrationOffsets();
     } else {
         debugln("[IMU] BNO055 not found - will retry");
         setLed(40, 0, 0);
@@ -331,7 +350,14 @@ void setup() {
 
     loadLevelingConfig();
     if (data.imu_connected) {
-        applyAxisRemap(config.mounting);
+        if (hasStoredOffsets) {
+            applyAxisRemap(config.mounting, OPERATION_MODE_ACCONLY);
+            debugln("[IMU] Offsets loaded — ACCONLY mode, ready to level");
+        } else {
+            applyAxisRemap(config.mounting, OPERATION_MODE_NDOF);
+            setLed(40, 40, 0);
+            debugln("[IMU] No stored offsets — NDOF mode for initial calibration");
+        }
     }
 
     // CAN bus
@@ -359,10 +385,14 @@ void loop() {
             data.imu_connected = bno.begin();
             if (data.imu_connected) {
                 debugln("[IMU] BNO055 connected on retry");
-                bno.setExtCrystalUse(true);
-                loadCalibrationOffsets();
-                applyAxisRemap(config.mounting);
-                setLed(0, 40, 0);
+                hasStoredOffsets = loadCalibrationOffsets();
+                if (hasStoredOffsets) {
+                    applyAxisRemap(config.mounting, OPERATION_MODE_ACCONLY);
+                    setLed(0, 40, 0);
+                } else {
+                    applyAxisRemap(config.mounting, OPERATION_MODE_NDOF);
+                    setLed(40, 40, 0);
+                }
             }
         }
         return;
@@ -374,12 +404,7 @@ void loop() {
 
         computeLeveling();
 
-        if (!calibrationSaved && data.cal_sys == 3) {
-            saveCalibrationOffsets();
-            calibrationSaved = true;
-        }
-
-        if (data.cal_sys == 3) {
+        if (hasStoredOffsets) {
             setLed(0, 40, 0);
         } else {
             setLed(40, 40, 0);
