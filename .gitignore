@@ -10,9 +10,12 @@
 # KiCAD cache
 fp-info-cache
 
-# PlatformIO
-.pio/
-.platformio/
+# ESP-IDF
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
 
 # IDEs
 .vscode/
@@ -24,15 +27,24 @@ fp-info-cache
 .DS_Store
 Thumbs.db
 
-# Local development/agent files
+# AI agent configuration (local only — never commit)
+.claude
+.claude/
+.claude.md
 CLAUDE.md
 CLAUDE.MD
-.claude/
+.cursorrules
+.cursor/
+.github/copilot*
+.aider*
+.continue/
+.codeium/
+.tabnine*
+.sourcery.yaml
 
-# CRITICAL: Secrets - never commit credentials
-src/Secrets.h
-src/secrets.h
+# Secrets
 secrets.h
+*.secrets
 *.zip
 
 # Temporary/backup files

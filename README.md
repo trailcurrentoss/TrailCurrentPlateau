@@ -1,6 +1,6 @@
 # TrailCurrent Plateau
 
-Vehicle leveling module that monitors trailer signals and controls leveling via a CAN bus interface with OTA firmware update capability. Part of the [TrailCurrent](https://trailcurrent.com) open-source vehicle platform.
+Vehicle leveling module that monitors trailer tilt angles and computes per-corner height adjustments via a CAN bus interface with OTA firmware update capability. Part of the [TrailCurrent](https://trailcurrent.com) open-source vehicle platform.
 
 ## Hardware Overview
 
@@ -14,7 +14,7 @@ Vehicle leveling module that monitors trailer signals and controls leveling via 
   - CAN bus communication at 500 kbps
   - Vehicle configuration (dimensions, mounting) received via CAN and stored in NVS
   - Over-the-air (OTA) firmware updates via WiFi (credentials provisioned via CAN)
-  - RGB LED status indicator
+  - mDNS-based device discovery for Headwaters integration
   - Custom flash partition layout with dual OTA slots
 
 ## Hardware Requirements
@@ -30,7 +30,6 @@ Vehicle leveling module that monitors trailer signals and controls leveling via 
 
 | GPIO | Function |
 |------|----------|
-| 21 | RGB status LED |
 | 1 | I2C SDA (BNO055) |
 | 2 | I2C SCL (BNO055) |
 | 7 | CAN TX |
@@ -66,48 +65,70 @@ See [KICAD_ENVIRONMENT_SETUP.md](https://github.com/trailcurrentoss/TrailCurrent
 
 ## Firmware
 
-See `src/` directory for PlatformIO-based firmware.
+ESP-IDF native firmware in the `main/` directory.
 
-**Setup:**
+**Prerequisites:**
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/) v4.1 or later
+
+**Build and flash:**
 ```bash
-# Install PlatformIO (if not already installed)
-pip install platformio
+# Set ESP-IDF target
+idf.py set-target esp32s3
 
 # Build firmware
-pio run
+idf.py build
 
 # Upload to board (serial)
-pio run -t upload
+idf.py flash
 
-# Upload via OTA (after initial flash)
-pio run -t upload --upload-port esp32s3-DEVICE_ID
+# Monitor serial output
+idf.py monitor
+
+# Build, flash, and monitor in one command
+idf.py build flash monitor
 ```
 
-### Firmware Dependencies
+**OTA update (after initial flash):**
+```bash
+curl -X POST http://esp32-XXYYZZ.local/ota --data-binary @build/plateau.bin
+```
 
-This firmware depends on the following public libraries:
+### Firmware Architecture
 
-- **[ESP32ArduinoDebugLibrary](https://github.com/trailcurrentoss/ESP32ArduinoDebugLibrary)** - Debug macros
-- **[OtaUpdateLibraryWROOM32](https://github.com/trailcurrentoss/OtaUpdateLibraryWROOM32)** - Over-the-air firmware update functionality
-- **[TwaiTaskBasedLibraryWROOM32](https://github.com/trailcurrentoss/TwaiTaskBasedLibraryWROOM32)** - CAN bus communication interface
-- **[Adafruit BNO055](https://github.com/adafruit/Adafruit_BNO055)** (v1.6.3) - IMU sensor driver
-- **[Adafruit Unified Sensor](https://github.com/adafruit/Adafruit_Sensor)** (v1.1.14) - Sensor abstraction layer
+The firmware uses FreeRTOS tasks for concurrent operation:
 
-All dependencies are automatically resolved by PlatformIO during the build process.
+| Task | Priority | Stack | Function |
+|------|----------|-------|----------|
+| twai | 5 | 4096 | CAN bus RX/TX, leveling computation, IMU reads |
+| ota | 3 | 8192 | OTA update (spawned on demand, non-blocking) |
+| discovery | 3 | 8192 | mDNS discovery (spawned on demand, non-blocking) |
 
-**WiFi Credentials (for OTA updates):**
-- WiFi credentials are provisioned over the CAN bus (ID `0x01`) and stored in NVS
-- No hardcoded credentials or secrets files needed
+OTA and discovery run as separate tasks to avoid blocking CAN bus communication. Mutual exclusion prevents both from running simultaneously.
+
+### Source Files
+
+| File | Purpose |
+|------|---------|
+| `main.c` | Application entry, TWAI task, leveling logic, CAN protocol |
+| `bno055.c/h` | BNO055 IMU driver (bare I2C, no Arduino dependency) |
+| `wifi_config.c/h` | WiFi credentials, connect/disconnect, CAN provisioning |
+| `ota.c/h` | Task-based OTA with HTTP server and mDNS |
+| `discovery.c/h` | Task-based mDNS discovery for Headwaters |
 
 ### CAN Bus Protocol
 
-- **Receive ID `0x00`:** OTA update trigger — initiates firmware update when device hostname matches
+- **Receive ID `0x00`:** OTA update trigger — initiates firmware update when device MAC matches
 - **Receive ID `0x01`:** WiFi credential provisioning — multi-frame protocol to store SSID/password in NVS
+- **Receive ID `0x02`:** Discovery trigger — joins WiFi, advertises via mDNS, waits for Headwaters confirmation
 - **Receive ID `0x20`:** Leveling configuration — set mounting surface, vehicle length/width, persist to NVS
 - **Transmit ID `0x30`:** Tilt data — pitch/roll angles (×100) and front-back/left-right height diffs in mm
 - **Transmit ID `0x31`:** Corner data — per-corner height adjustments in mm (normalized, lowest = 0)
 - **Transmit ID `0x32`:** Status data — IMU connection, calibration levels, mounting orientation
 - CAN speed: 500 kbps
+
+### WiFi Credentials
+
+WiFi credentials are provisioned over the CAN bus (ID `0x01`) and stored in NVS. No hardcoded credentials or secrets files needed.
 
 ## Manufacturing
 
@@ -123,12 +144,20 @@ All dependencies are automatically resolved by PlatformIO during the build proce
 │       ├── *.kicad_pro           # KiCAD project
 │       ├── *.kicad_sch           # Schematic
 │       └── *.kicad_pcb           # PCB layout
-├── src/                          # Firmware source
-│   ├── Main.cpp                  # Main application
-│   ├── Globals.h                 # Debug macros and data structures
-│   └── wifiConfig.h              # CAN-based WiFi credential provisioning
-├── platformio.ini                # Build configuration
-└── partitions.csv                # ESP32 flash partition layout
+├── CAD/                          # FreeCAD PCB enclosure design
+├── main/                         # ESP-IDF firmware source
+│   ├── main.c                    # Application entry, TWAI task, leveling logic
+│   ├── bno055.c/h                # BNO055 IMU I2C driver
+│   ├── wifi_config.c/h           # WiFi credentials and CAN provisioning
+│   ├── ota.c/h                   # OTA firmware update (task-based)
+│   ├── discovery.c/h             # mDNS device discovery (task-based)
+│   ├── CMakeLists.txt            # Component build configuration
+│   └── idf_component.yml         # ESP-IDF component dependencies
+├── CMakeLists.txt                # Root ESP-IDF project file
+├── sdkconfig.defaults            # ESP-IDF build defaults
+├── partitions.csv                # ESP32 flash partition layout (dual OTA)
+├── LICENSE                       # MIT License
+└── README.md                     # This file
 ```
 
 ## License
