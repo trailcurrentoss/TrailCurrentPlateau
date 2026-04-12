@@ -22,6 +22,9 @@ static const char *TAG = "discovery";
 #error "MODULE_TYPE must be defined (e.g., \"plateau\")"
 #endif
 
+// CAN TX ID for status messages (fixed for Plateau)
+#define CAN_STATUS_ID  0x32
+
 // ---------------------------------------------------------------------------
 // Discovery state
 // ---------------------------------------------------------------------------
@@ -36,6 +39,12 @@ static volatile bool s_discovery_running = false;
 static void discovery_mdns_start(void)
 {
     const char *hostname = wifi_config_get_hostname();
+
+    // Build CAN ID string
+    char canid_str[8];
+    snprintf(canid_str, sizeof(canid_str), "0x%02X", CAN_STATUS_ID);
+
+    // Get firmware version from app descriptor
     const esp_app_desc_t *app = esp_app_get_description();
 
     mdns_init();
@@ -44,14 +53,15 @@ static void discovery_mdns_start(void)
 
     mdns_txt_item_t txt[] = {
         { "type",  MODULE_TYPE },
+        { "canid", canid_str },
         { "fw",    app->version },
     };
 
     mdns_service_add("TrailCurrent Discovery", "_trailcurrent", "_tcp",
                      80, txt, sizeof(txt) / sizeof(txt[0]));
 
-    ESP_LOGI(TAG, "mDNS discovery: %s.local type=%s fw=%s",
-             hostname, MODULE_TYPE, app->version);
+    ESP_LOGI(TAG, "mDNS discovery: %s.local type=%s canid=%s fw=%s",
+             hostname, MODULE_TYPE, canid_str, app->version);
 }
 
 // ---------------------------------------------------------------------------

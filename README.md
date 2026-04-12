@@ -120,6 +120,7 @@ OTA and discovery run as separate tasks to avoid blocking CAN bus communication.
 - **Receive ID `0x00`:** OTA update trigger — initiates firmware update when device MAC matches
 - **Receive ID `0x01`:** WiFi credential provisioning — multi-frame protocol to store SSID/password in NVS
 - **Receive ID `0x02`:** Discovery trigger — joins WiFi, advertises via mDNS, waits for Headwaters confirmation
+- **Transmit ID `0x04`:** Firmware version report — sent once on boot: `[mac3, mac4, mac5, major, minor, patch]`
 - **Receive ID `0x20`:** Leveling configuration — set mounting surface, vehicle length/width, persist to NVS
 - **Transmit ID `0x30`:** Tilt data — pitch/roll angles (×100) and front-back/left-right height diffs in mm
 - **Transmit ID `0x31`:** Corner data — per-corner height adjustments in mm (normalized, lowest = 0)
