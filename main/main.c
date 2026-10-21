@@ -6,8 +6,7 @@
 #include "driver/twai.h"
 #include "esp_log.h"
 #include "esp_timer.h"
-#include "esp_app_desc.h"
-#include "esp_mac.h"
+#include "can_common.h"
 #include "nvs.h"
 
 #include "bno055.h"
@@ -18,13 +17,13 @@
 static const char *TAG = "plateau";
 
 // =============================================================================
-// Pin Definitions — ESP32-S3-Zero
+// Pin Definitions — Waveshare ESP32-S3-RS485-CAN
 // =============================================================================
 
-#define I2C_SDA_PIN  1
-#define I2C_SCL_PIN  2
-#define CAN_TX_PIN   7
-#define CAN_RX_PIN   8
+#define I2C_SDA_PIN  5    // ribbon cable wire 13
+#define I2C_SCL_PIN  6    // ribbon cable wire 15
+#define CAN_TX_PIN   15   // onboard isolated transceiver
+#define CAN_RX_PIN   16
 
 // =============================================================================
 // CAN Bus Configuration
@@ -33,10 +32,13 @@ static const char *TAG = "plateau";
 #define CAN_ID_OTA_TRIGGER       0x00
 #define CAN_ID_WIFI_CONFIG       0x01
 #define CAN_ID_DISCOVERY_TRIGGER 0x02
-#define CAN_ID_LEVELING_CFG      0x20
-#define CAN_ID_TILT_DATA         0x30
-#define CAN_ID_CORNER_DATA       0x31
-#define CAN_ID_STATUS_DATA       0x32
+// Plateau CAN IDs were reallocated 2026-05-19 to the contiguous 0x36-0x39 block
+// (matches TrailCurrent.dbc). Previous allocation was 0x20 / 0x30 / 0x31 / 0x32 —
+// 0x20 was reassigned to Borealis safety frame, so the leveling group moved as one.
+#define CAN_ID_LEVELING_CFG      0x36
+#define CAN_ID_TILT_DATA         0x37
+#define CAN_ID_CORNER_DATA       0x38
+#define CAN_ID_STATUS_DATA       0x39
 
 #define STATUS_TX_INTERVAL_MS    33    // ~30 Hz
 #define TX_PROBE_INTERVAL_MS     2000  // slow probe when no peers
@@ -68,7 +70,11 @@ typedef struct {
     bool imu_connected;
 } leveling_data_t;
 
-static leveling_config_t s_config;
+static leveling_config_t s_config = {
+    .mounting = MOUNT_FLOOR,
+    .vehicle_length_cm = 500,
+    .vehicle_width_cm  = 200,
+};
 static leveling_data_t s_data;
 static bool s_has_stored_offsets = false;
 
@@ -91,19 +97,15 @@ static void save_leveling_config(void)
 static void load_leveling_config(void)
 {
     nvs_handle_t handle;
-    if (nvs_open("leveling", NVS_READONLY, &handle) != ESP_OK) {
-        // Defaults
-        s_config.mounting = MOUNT_FLOOR;
-        s_config.vehicle_length_cm = 500;
-        s_config.vehicle_width_cm = 200;
-        return;
-    }
+    if (nvs_open("leveling", NVS_READONLY, &handle) != ESP_OK) return;  // keep defaults
 
     uint8_t mount_val = 0;
-    nvs_get_u8(handle, "mounting", &mount_val);
-    s_config.mounting = (bno055_mount_t)mount_val;
+    if (nvs_get_u8(handle, "mounting", &mount_val) == ESP_OK) {
+        s_config.mounting = (bno055_mount_t)mount_val;
+    }
 
-    uint16_t len = 500, wid = 200;
+    uint16_t len = s_config.vehicle_length_cm;
+    uint16_t wid = s_config.vehicle_width_cm;
     nvs_get_u16(handle, "length_cm", &len);
     nvs_get_u16(handle, "width_cm", &wid);
     s_config.vehicle_length_cm = len;
@@ -182,7 +184,11 @@ static bool save_and_verify_calibration(void)
 static void compute_leveling(void)
 {
     bno055_vec3_t accel;
-    if (bno055_read_accel(&accel) != ESP_OK) return;
+    if (bno055_read_accel(&accel) != ESP_OK) {
+        ESP_LOGW(TAG, "BNO055 accel read failed — marking disconnected");
+        s_data.imu_connected = false;
+        return;
+    }
 
     s_data.pitch_deg = atan2f(accel.x, sqrtf(accel.y * accel.y + accel.z * accel.z)) * (180.0f / M_PI);
     s_data.roll_deg  = atan2f(accel.y, accel.z) * (180.0f / M_PI);
@@ -283,8 +289,10 @@ static void handle_leveling_config(const uint8_t *data, uint8_t len)
         s_config.vehicle_length_cm = (data[2] << 8) | data[3];
         s_config.vehicle_width_cm  = (data[4] << 8) | data[5];
 
-        bno055_apply_axis_remap(s_config.mounting,
-            s_has_stored_offsets ? BNO055_MODE_ACCONLY : BNO055_MODE_NDOF);
+        if (s_data.imu_connected) {
+            bno055_apply_axis_remap(s_config.mounting,
+                s_has_stored_offsets ? BNO055_MODE_ACCONLY : BNO055_MODE_NDOF);
+        }
 
         if (data[6] == 0x01) {
             save_leveling_config();
@@ -300,6 +308,7 @@ static void handle_leveling_config(const uint8_t *data, uint8_t len)
     }
     case 0x03: {
         ESP_LOGI(TAG, "Save calibration requested");
+        if (!s_data.imu_connected) break;
         if (save_and_verify_calibration()) {
             s_has_stored_offsets = true;
             bno055_apply_axis_remap(s_config.mounting, BNO055_MODE_ACCONLY);
@@ -314,47 +323,14 @@ static void handle_leveling_config(const uint8_t *data, uint8_t len)
 // TWAI (CAN) task — runs independently
 // =============================================================================
 
+
 static void twai_task(void *arg)
 {
-    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(
-        (gpio_num_t)CAN_TX_PIN, (gpio_num_t)CAN_RX_PIN, TWAI_MODE_NORMAL);
-    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
-    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    // Configure alerts BEFORE any bus activity so no error transitions are missed.
+    twai_reconfigure_alerts(CAN_COMMON_ALERTS, NULL);
 
-    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to install TWAI driver");
-        vTaskDelete(NULL);
-        return;
-    }
-    if (twai_start() != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start TWAI driver");
-        vTaskDelete(NULL);
-        return;
-    }
-
-    // Broadcast firmware version on CAN 0x04 at startup
-    {
-        uint8_t mac[6];
-        esp_read_mac(mac, ESP_MAC_WIFI_STA);
-        const esp_app_desc_t *app = esp_app_get_description();
-        unsigned maj = 0, min = 0, pat = 0;
-        sscanf(app->version, "%u.%u.%u", &maj, &min, &pat);
-        twai_message_t ver_msg = {
-            .identifier = 0x04,
-            .data_length_code = 6,
-            .data = { mac[3], mac[4], mac[5], maj, min, pat }
-        };
-        twai_transmit(&ver_msg, pdMS_TO_TICKS(50));
-        ESP_LOGI(TAG, "Version broadcast: %s (CAN 0x04)", app->version);
-    }
-
-    uint32_t alerts = TWAI_ALERT_RX_DATA | TWAI_ALERT_ERR_PASS |
-                      TWAI_ALERT_BUS_ERROR | TWAI_ALERT_RX_QUEUE_FULL |
-                      TWAI_ALERT_BUS_OFF | TWAI_ALERT_BUS_RECOVERED |
-                      TWAI_ALERT_ERR_ACTIVE | TWAI_ALERT_TX_FAILED |
-                      TWAI_ALERT_TX_SUCCESS;
-    twai_reconfigure_alerts(alerts, NULL);
-    ESP_LOGI(TAG, "TWAI driver started (NORMAL mode, 500 kbps)");
+    // Alerts armed — version broadcast TX failure is caught by the state machine.
+    can_common_version_broadcast();
 
     typedef enum { TX_ACTIVE, TX_PROBING } tx_state_t;
     bool bus_off = false;
@@ -381,7 +357,7 @@ static void twai_task(void *arg)
             ESP_LOGE(TAG, "TWAI bus-off, initiating recovery");
             bus_off = true;
             twai_initiate_recovery();
-            continue;
+            // No continue — fall through so RX_DATA in the same poll is still processed.
         }
         if (triggered & TWAI_ALERT_BUS_RECOVERED) {
             ESP_LOGI(TAG, "TWAI bus recovered, restarting");
@@ -406,6 +382,7 @@ static void twai_task(void *arg)
             if (tx_state == TX_PROBING) {
                 tx_state = TX_ACTIVE;
                 tx_fail_count = 0;
+                can_common_version_broadcast();
                 ESP_LOGI(TAG, "TWAI probe ACK'd, peer detected, resuming normal TX");
             }
             tx_fail_count = 0;
@@ -416,6 +393,7 @@ static void twai_task(void *arg)
             if (tx_state == TX_PROBING) {
                 tx_state = TX_ACTIVE;
                 tx_fail_count = 0;
+                can_common_version_broadcast();
                 ESP_LOGI(TAG, "TWAI peer detected via RX, resuming normal TX");
             }
             twai_message_t msg;
@@ -502,8 +480,20 @@ void app_main(void)
     ESP_LOGI(TAG, "Vehicle Leveling Module");
     ESP_LOGI(TAG, "Hostname: %s", wifi_config_get_hostname());
 
+    // I2C master bus for the BNO055 (ribbon cable wires 13/15)
+    i2c_master_bus_handle_t i2c_bus = NULL;
+    i2c_master_bus_config_t bus_cfg = {
+        .i2c_port = I2C_NUM_0,
+        .sda_io_num = I2C_SDA_PIN,
+        .scl_io_num = I2C_SCL_PIN,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &i2c_bus));
+
     // Initialize BNO055 IMU
-    if (bno055_init(I2C_SDA_PIN, I2C_SCL_PIN) == ESP_OK) {
+    if (bno055_init(i2c_bus) == ESP_OK) {
         s_data.imu_connected = true;
         ESP_LOGI(TAG, "BNO055 detected");
 
@@ -528,6 +518,7 @@ void app_main(void)
     }
 
     // CAN runs in its own task so bus errors never block app_main
+    ESP_ERROR_CHECK(can_common_init(CAN_TX_PIN, CAN_RX_PIN));
     xTaskCreatePinnedToCore(twai_task, "twai", 4096, NULL, 5, NULL, 1);
 
     ESP_LOGI(TAG, "Setup complete");

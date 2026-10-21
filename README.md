@@ -4,8 +4,8 @@ Vehicle leveling module that monitors trailer tilt angles and computes per-corne
 
 ## Hardware Overview
 
-- **Microcontroller:** ESP32-S3
-- **IMU:** Adafruit BNO055 9-DOF Absolute Orientation
+- **Microcontroller:** ESP32-S3 ([Waveshare ESP32-S3-RS485-CAN](https://www.waveshare.com/esp32-s3-rs485-can.htm))
+- **IMU:** [DFRobot SEN0253](https://wiki.dfrobot.com/sen0253/) Gravity 10-DOF AHRS (Bosch BNO055)
 - **Function:** Vehicle leveling with CAN bus communication
 - **Key Features:**
   - BNO055 IMU for pitch/roll measurement with auto-calibration
@@ -19,56 +19,38 @@ Vehicle leveling module that monitors trailer tilt angles and computes per-corne
 
 ## Hardware Requirements
 
-### Components
+Plateau is built entirely from off-the-shelf modules wired together — there is no custom PCB.
 
-- **Microcontroller:** [Waveshare ESP32-S3-Zero](https://www.waveshare.com/esp32-s3-zero.htm?aff_id=Trailcurrent) — selected for its extensive documentation, small footprint, pre-soldered programming pins, castellations for direct PCB integration, and low power consumption
-- **CAN Transceiver:** SN65HVD230
-- **Power:** Buck converter (12V step-down)
-- **Connectors:** JST XH 2.54 4-pin
+![Plateau ribbon cable wiring](DOCS/plateau-ribbon-cable.png)
+
+### Bill of Materials
+
+| Qty | Part | Notes |
+|-----|------|-------|
+| 1 | [Waveshare ESP32-S3-RS485-CAN](https://www.waveshare.com/esp32-s3-rs485-can.htm) | ESP32-S3R8 (8MB PSRAM, 16MB flash), built-in isolated CAN transceiver (TJA1051), built-in isolated RS485 transceiver (unused), 7-36V DC input or 5V USB-C — runs directly from the vehicle 12V supply |
+| 1 | [DFRobot SEN0253](https://wiki.dfrobot.com/sen0253/) Gravity 10-DOF AHRS | Bosch BNO055 IMU (I2C 0x28) + BMP280 (unused). Ships with a Gravity 4-pin I2C cable |
+| 1 | 20-pin IDC 2x10 ribbon cable | Connects to the board's user header; only wires 1, 3, 13 and 15 are used |
+| 1 | Enclosure | FreeCAD design in [`CAD/`](CAD/) |
 
 ### Pin Connections
 
-| GPIO | Function |
-|------|----------|
-| 1 | I2C SDA (BNO055) |
-| 2 | I2C SCL (BNO055) |
-| 7 | CAN TX |
-| 8 | CAN RX |
+| IDC Pin | GPIO | Function |
+|---------|------|----------|
+| 1 | — | 3.3V → IMU VCC |
+| 3 | — | GND → IMU GND |
+| 13 | 5 | I2C SDA (BNO055) |
+| 15 | 6 | I2C SCL (BNO055) |
+| — | 15 | CAN TX (onboard transceiver) |
+| — | 16 | CAN RX (onboard transceiver) |
 
-### KiCAD Library Dependencies
-
-This project uses the consolidated [TrailCurrentKiCADLibraries](https://github.com/trailcurrentoss/TrailCurrentKiCADLibraries).
-
-**Setup:**
-
-```bash
-# Clone the library
-git clone git@github.com:trailcurrentoss/TrailCurrentKiCADLibraries.git
-
-# Set environment variables (add to ~/.bashrc or ~/.zshrc)
-export TRAILCURRENT_SYMBOL_DIR="/path/to/TrailCurrentKiCADLibraries/symbols"
-export TRAILCURRENT_FOOTPRINT_DIR="/path/to/TrailCurrentKiCADLibraries/footprints"
-export TRAILCURRENT_3DMODEL_DIR="/path/to/TrailCurrentKiCADLibraries/3d_models"
-```
-
-See [KICAD_ENVIRONMENT_SETUP.md](https://github.com/trailcurrentoss/TrailCurrentKiCADLibraries/blob/main/KICAD_ENVIRONMENT_SETUP.md) in the library repository for detailed setup instructions.
-
-## Opening the Project
-
-1. **Set up environment variables** (see Library Dependencies above)
-2. **Open KiCAD:**
-   ```bash
-   kicad EDA/TrailCurrentPlateau/TrailCurrentPlateau.kicad_pro
-   ```
-3. **Verify libraries load** - All symbol and footprint libraries should resolve without errors
-4. **View 3D models** - Open PCB and press `Alt+3` to view the 3D visualization
+CAN H / CAN L and 7-36V power land on the board's screw terminals, not the ribbon cable. See [DOCS/plateau-ribbon-cable.png](DOCS/plateau-ribbon-cable.png) for the full wiring reference.
 
 ## Firmware
 
 ESP-IDF native firmware in the `main/` directory.
 
 **Prerequisites:**
-- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/) v4.1 or later
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/) v5.2 or later
 
 **Build and flash:**
 ```bash
@@ -88,10 +70,42 @@ idf.py monitor
 idf.py build flash monitor
 ```
 
+**Release build (`build-all.sh`):**
+
+```bash
+./build-all.sh
+```
+
+Produces both release binaries:
+
+| File | Use |
+|------|-----|
+| `build/plateau.bin` | App-only image — OTA via Headwaters or `curl` |
+| `build/plateau_merged.bin` | Bootloader + partition table + OTA data + app — web flasher, or direct flash at `0x0` |
+
+Never use the merged binary for OTA: it starts with the bootloader, not an app header, and fails `esp_ota_end` validation.
+
+**Direct flash of the merged binary:**
+```bash
+esptool.py --chip esp32s3 write_flash 0x0 build/plateau_merged.bin
+```
+
 **OTA update (after initial flash):**
 ```bash
 curl -X POST http://esp32-XXYYZZ.local/ota --data-binary @build/plateau.bin
 ```
+
+### Flash Layout
+
+16MB flash, DIO mode, dual OTA slots (`partitions.csv`):
+
+| Partition | Offset | Size |
+|-----------|--------|------|
+| nvs | 0x9000 | 20KB |
+| otadata | 0xE000 | 8KB |
+| app0 (ota_0) | 0x10000 | 5.9MB |
+| app1 (ota_1) | 0x600000 | 5.9MB |
+| spiffs | 0xBF0000 | 4.1MB |
 
 ### Firmware Architecture
 
@@ -110,7 +124,7 @@ OTA and discovery run as separate tasks to avoid blocking CAN bus communication.
 | File | Purpose |
 |------|---------|
 | `main.c` | Application entry, TWAI task, leveling logic, CAN protocol |
-| `bno055.c/h` | BNO055 IMU driver (bare I2C, no Arduino dependency) |
+| `bno055.c/h` | BNO055 IMU driver for the DFRobot SEN0253 (ESP-IDF I2C master, 100 kHz) |
 | `wifi_config.c/h` | WiFi credentials, connect/disconnect, CAN provisioning |
 | `ota.c/h` | Task-based OTA with HTTP server and mDNS |
 | `discovery.c/h` | Task-based mDNS discovery for Headwaters |
@@ -121,31 +135,22 @@ OTA and discovery run as separate tasks to avoid blocking CAN bus communication.
 - **Receive ID `0x01`:** WiFi credential provisioning — multi-frame protocol to store SSID/password in NVS
 - **Receive ID `0x02`:** Discovery trigger — joins WiFi, advertises via mDNS, waits for Headwaters confirmation
 - **Transmit ID `0x04`:** Firmware version report — sent once on boot: `[mac3, mac4, mac5, major, minor, patch]`
-- **Receive ID `0x20`:** Leveling configuration — set mounting surface, vehicle length/width, persist to NVS
-- **Transmit ID `0x30`:** Tilt data — pitch/roll angles (×100) and front-back/left-right height diffs in mm
-- **Transmit ID `0x31`:** Corner data — per-corner height adjustments in mm (normalized, lowest = 0)
-- **Transmit ID `0x32`:** Status data — IMU connection, calibration levels, mounting orientation
+- **Receive ID `0x36`:** Leveling configuration — set mounting surface, vehicle length/width, persist to NVS
+- **Transmit ID `0x37`:** Tilt data — pitch/roll angles (×100) and front-back/left-right height diffs in mm
+- **Transmit ID `0x38`:** Corner data — per-corner height adjustments in mm (normalized, lowest = 0)
+- **Transmit ID `0x39`:** Status data — IMU connection, calibration levels, mounting orientation
+- *(Plateau CAN IDs were reallocated 2026-05-19 from the original 0x20/0x30/0x31/0x32 block to the contiguous 0x36-0x39 block when Borealis claimed 0x20 for its safety frame.)*
 - CAN speed: 500 kbps
 
 ### WiFi Credentials
 
 WiFi credentials are provisioned over the CAN bus (ID `0x01`) and stored in NVS. No hardcoded credentials or secrets files needed.
 
-## Manufacturing
-
-- **PCB Files:** Ready for fabrication via standard PCB services (JLCPCB, OSH Park, etc.)
-- **BOM Generation:** Export BOM from KiCAD schematic (Tools > Generate BOM)
-- **JLCPCB Assembly:** See [BOM_ASSEMBLY_WORKFLOW.md](https://github.com/trailcurrentoss/TrailCurrentKiCADLibraries/blob/main/BOM_ASSEMBLY_WORKFLOW.md) for detailed assembly workflow
-
 ## Project Structure
 
 ```
-├── EDA/                          # KiCAD hardware design files
-│   └── TrailCurrentPlateau/
-│       ├── *.kicad_pro           # KiCAD project
-│       ├── *.kicad_sch           # Schematic
-│       └── *.kicad_pcb           # PCB layout
-├── CAD/                          # FreeCAD PCB enclosure design
+├── EDA/                          # Archived KiCAD design from an earlier custom-PCB revision (no longer used)
+├── CAD/                          # FreeCAD enclosure design
 ├── main/                         # ESP-IDF firmware source
 │   ├── main.c                    # Application entry, TWAI task, leveling logic
 │   ├── bno055.c/h                # BNO055 IMU I2C driver
@@ -155,8 +160,10 @@ WiFi credentials are provisioned over the CAN bus (ID `0x01`) and stored in NVS.
 │   ├── CMakeLists.txt            # Component build configuration
 │   └── idf_component.yml         # ESP-IDF component dependencies
 ├── CMakeLists.txt                # Root ESP-IDF project file
+├── DOCS/                         # Ribbon cable wiring diagram (SVG source + PNG)
+├── build-all.sh                  # Release build: OTA + merged (web flasher) binaries
 ├── sdkconfig.defaults            # ESP-IDF build defaults
-├── partitions.csv                # ESP32 flash partition layout (dual OTA)
+├── partitions.csv                # 16MB flash partition layout (dual OTA)
 ├── LICENSE                       # MIT License
 └── README.md                     # This file
 ```
@@ -165,14 +172,8 @@ WiFi credentials are provisioned over the CAN bus (ID `0x01`) and stored in NVS.
 
 MIT License - See LICENSE file for details.
 
-This is open source hardware. You are free to use, modify, and distribute these designs for personal or commercial purposes.
+You are free to use, modify, and distribute these designs for personal or commercial purposes.
 
 ## Contributing
 
 Improvements and contributions are welcome! Please submit issues or pull requests.
-
-## Support
-
-For questions about:
-- **KiCAD setup:** See [KICAD_ENVIRONMENT_SETUP.md](https://github.com/trailcurrentoss/TrailCurrentKiCADLibraries/blob/main/KICAD_ENVIRONMENT_SETUP.md)
-- **Assembly workflow:** See [BOM_ASSEMBLY_WORKFLOW.md](https://github.com/trailcurrentoss/TrailCurrentKiCADLibraries/blob/main/BOM_ASSEMBLY_WORKFLOW.md)

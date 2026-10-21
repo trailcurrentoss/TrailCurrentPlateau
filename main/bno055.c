@@ -7,35 +7,20 @@
 
 static const char *TAG = "bno055";
 
-// ---------------------------------------------------------------------------
-// BNO055 register addresses
-// ---------------------------------------------------------------------------
-
-#define REG_CHIP_ID         0x00
-#define REG_ACC_DATA_X_LSB  0x08
-#define REG_CALIB_STAT      0x35
-#define REG_OPR_MODE        0x3D
-#define REG_AXIS_MAP_CONFIG 0x41
-#define REG_AXIS_MAP_SIGN   0x42
+#define REG_CHIP_ID          0x00
+#define REG_ACC_DATA_X_LSB   0x08
+#define REG_CALIB_STAT       0x35
+#define REG_OPR_MODE         0x3D
+#define REG_AXIS_MAP_CONFIG  0x41
+#define REG_AXIS_MAP_SIGN    0x42
 #define REG_ACC_OFFSET_X_LSB 0x55
 
 #define BNO055_CHIP_ID_VALUE 0xA0
-#define ACC_SCALE            100.0f  // BNO055 accelerometer LSB = 1/100 m/s^2
-
-// Mode switch delay (datasheet: 7ms from any to CONFIG, 19ms from CONFIG to any)
+#define ACC_SCALE            100.0f
 #define MODE_SWITCH_DELAY_MS 25
 
-// ---------------------------------------------------------------------------
-// I2C bus handle
-// ---------------------------------------------------------------------------
-
-static i2c_master_bus_handle_t s_bus = NULL;
 static i2c_master_dev_handle_t s_dev = NULL;
 static bool s_connected = false;
-
-// ---------------------------------------------------------------------------
-// Low-level I2C helpers
-// ---------------------------------------------------------------------------
 
 static esp_err_t bno055_write_reg(uint8_t reg, uint8_t value)
 {
@@ -48,45 +33,30 @@ static esp_err_t bno055_read_reg(uint8_t reg, uint8_t *out, size_t len)
     return i2c_master_transmit_receive(s_dev, &reg, 1, out, len, 100);
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-esp_err_t bno055_init(int sda_pin, int scl_pin)
+esp_err_t bno055_init(i2c_master_bus_handle_t bus)
 {
-    // Configure I2C master bus
-    i2c_master_bus_config_t bus_cfg = {
-        .i2c_port = I2C_NUM_0,
-        .sda_io_num = sda_pin,
-        .scl_io_num = scl_pin,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .flags.enable_internal_pullup = true,
-    };
-
-    esp_err_t ret = i2c_new_master_bus(&bus_cfg, &s_bus);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "I2C bus init failed: %s", esp_err_to_name(ret));
-        return ret;
+    if (!bus) {
+        ESP_LOGE(TAG, "bno055_init called with NULL bus");
+        return ESP_ERR_INVALID_ARG;
     }
 
-    // Add BNO055 device
+    // The BNO055 runs up to 400 kHz, but 100 kHz is what has been verified
+    // with the DFRobot SEN0253 module over the ribbon cable.
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = BNO055_ADDR,
-        .scl_speed_hz = 400000,
+        .scl_speed_hz = 100000,
     };
 
-    ret = i2c_master_bus_add_device(s_bus, &dev_cfg, &s_dev);
+    esp_err_t ret = i2c_master_bus_add_device(bus, &dev_cfg, &s_dev);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "I2C device add failed: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "BNO055 device add failed: %s", esp_err_to_name(ret));
         return ret;
     }
 
-    // Allow I2C peripheral to settle
-    vTaskDelay(pdMS_TO_TICKS(100));
+    // BNO055 boot time is ~650 ms from POR (datasheet). Give it time before probe.
+    vTaskDelay(pdMS_TO_TICKS(700));
 
-    // Verify chip ID
     uint8_t chip_id = 0;
     ret = bno055_read_reg(REG_CHIP_ID, &chip_id, 1);
     if (ret != ESP_OK || chip_id != BNO055_CHIP_ID_VALUE) {
@@ -129,19 +99,14 @@ esp_err_t bno055_apply_axis_remap(bno055_mount_t mount, uint8_t target_mode)
 
     switch (mount) {
     case MOUNT_FLOOR:
-        // P1 default: REMAP_CONFIG=0x24, REMAP_SIGN=0x00
         bno055_write_reg(REG_AXIS_MAP_CONFIG, 0x24);
         bno055_write_reg(REG_AXIS_MAP_SIGN, 0x00);
         break;
-
     case MOUNT_LEFT_WALL:
-        // X=X, Y=Z, Z=Y with Z sign flipped
         bno055_write_reg(REG_AXIS_MAP_CONFIG, 0x18);
         bno055_write_reg(REG_AXIS_MAP_SIGN, 0x01);
         break;
-
     case MOUNT_RIGHT_WALL:
-        // X=X, Y=Z, Z=Y with Y sign flipped
         bno055_write_reg(REG_AXIS_MAP_CONFIG, 0x18);
         bno055_write_reg(REG_AXIS_MAP_SIGN, 0x02);
         break;
@@ -163,7 +128,6 @@ esp_err_t bno055_read_accel(bno055_vec3_t *out)
     out->x = raw_x / ACC_SCALE;
     out->y = raw_y / ACC_SCALE;
     out->z = raw_z / ACC_SCALE;
-
     return ESP_OK;
 }
 
@@ -177,13 +141,11 @@ esp_err_t bno055_get_cal_status(bno055_cal_status_t *out)
     out->gyro  = (cal >> 4) & 0x03;
     out->accel = (cal >> 2) & 0x03;
     out->mag   = cal & 0x03;
-
     return ESP_OK;
 }
 
 esp_err_t bno055_get_offsets(bno055_offsets_t *out)
 {
-    // Offsets are 22 bytes starting at REG_ACC_OFFSET_X_LSB
     uint8_t buf[22];
     esp_err_t ret = bno055_read_reg(REG_ACC_OFFSET_X_LSB, buf, 22);
     if (ret != ESP_OK) return ret;
@@ -199,14 +161,13 @@ esp_err_t bno055_get_offsets(bno055_offsets_t *out)
     out->gyro_offset_z  = (int16_t)((buf[17] << 8) | buf[16]);
     out->accel_radius   = (int16_t)((buf[19] << 8) | buf[18]);
     out->mag_radius     = (int16_t)((buf[21] << 8) | buf[20]);
-
     return ESP_OK;
 }
 
 esp_err_t bno055_set_offsets(const bno055_offsets_t *offsets)
 {
     uint8_t buf[23];
-    buf[0]  = REG_ACC_OFFSET_X_LSB;  // register address
+    buf[0]  = REG_ACC_OFFSET_X_LSB;
     buf[1]  = offsets->accel_offset_x & 0xFF;
     buf[2]  = (offsets->accel_offset_x >> 8) & 0xFF;
     buf[3]  = offsets->accel_offset_y & 0xFF;
@@ -229,6 +190,5 @@ esp_err_t bno055_set_offsets(const bno055_offsets_t *offsets)
     buf[20] = (offsets->accel_radius >> 8) & 0xFF;
     buf[21] = offsets->mag_radius & 0xFF;
     buf[22] = (offsets->mag_radius >> 8) & 0xFF;
-
     return i2c_master_transmit(s_dev, buf, 23, 100);
 }

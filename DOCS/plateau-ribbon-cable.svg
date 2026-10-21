@@ -1,0 +1,321 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 850" font-family="Inter, Helvetica, Arial, sans-serif">
+
+  <!-- Background -->
+  <rect width="1100" height="850" fill="#f8f9fa"/>
+
+  <!-- Title bar -->
+  <rect width="1100" height="54" fill="#ffffff"/>
+  <rect y="54" width="1100" height="3" fill="#52a441"/>
+  <text x="24" y="35" font-size="16" font-weight="700" fill="#52a441">TrailCurrent Plateau</text>
+  <text x="268" y="35" font-size="13" fill="#495057">20-Pin Ribbon Cable — IMU Wiring Reference</text>
+  <text x="1076" y="35" text-anchor="end" font-size="10" fill="#6c757d">IDC 2x10 connector</text>
+
+  <!-- Subtitle -->
+  <text x="550" y="82" text-anchor="middle" font-size="12" fill="#6c757d">View: top-down with USB-C on left of case — red stripe (Pin 1) is on the LEFT, next to USB-C</text>
+
+  <!-- =============== RIBBON CABLE VISUALIZATION =============== -->
+  <text x="50"   y="96" font-size="10" fill="#495057" font-weight="600">← USB-C side — red stripe (Pin 1)</text>
+  <text x="1050" y="96" text-anchor="end" font-size="10" fill="#495057" font-weight="600">Pin 20 →</text>
+
+  <rect x="40" y="100" width="1020" height="210" fill="#e9ecef" stroke="#ced4da" stroke-width="1" rx="6"/>
+
+
+  <!-- Wire 1: 3.3V — Power -->
+  <rect x="52" y="108" width="46" height="194" fill="#ff5453" stroke="#cc4242" stroke-width="1" rx="2"/>
+  <text x="75" y="130" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">1</text>
+  <text x="75" y="148" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">3.3V</text>
+  <text x="75" y="165" text-anchor="middle" font-size="9" fill="#ffe5e5">Power</text>
+  <text x="75" y="178" text-anchor="middle" font-size="9" fill="#ffe5e5">IMU</text>
+  <text x="75" y="290" text-anchor="middle" font-size="8" fill="#ffe5e5">RED STRIPE</text>
+
+  <!-- Wire 2: 5V — Power -->
+  <rect x="102" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="125" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">2</text>
+  <text x="125" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">5V</text>
+  <text x="125" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">Power</text>
+
+  <!-- Wire 3: GND — Ground -->
+  <rect x="152" y="108" width="46" height="194" fill="#1a1a1a" stroke="#000000" stroke-width="1" rx="2"/>
+  <text x="175" y="130" text-anchor="middle" font-size="12" fill="#dee2e6" font-weight="700">3</text>
+  <text x="175" y="148" text-anchor="middle" font-size="10" fill="#dee2e6" font-weight="600">GND</text>
+  <text x="175" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">Ground</text>
+
+  <!-- Wire 4: GND — Ground -->
+  <rect x="202" y="108" width="46" height="194" fill="#1a1a1a" stroke="#000000" stroke-width="1" rx="2"/>
+  <text x="225" y="130" text-anchor="middle" font-size="12" fill="#dee2e6" font-weight="700">4</text>
+  <text x="225" y="148" text-anchor="middle" font-size="10" fill="#dee2e6" font-weight="600">GND</text>
+  <text x="225" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">Ground</text>
+
+  <!-- Wire 5: IO43 — TXD0 -->
+  <rect x="252" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="275" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">5</text>
+  <text x="275" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO43</text>
+  <text x="275" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">TXD0</text>
+
+  <!-- Wire 6: IO20 — USB D+ -->
+  <rect x="302" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="325" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">6</text>
+  <text x="325" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO20</text>
+  <text x="325" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">USB D+</text>
+
+  <!-- Wire 7: IO44 — RXD0 -->
+  <rect x="352" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="375" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">7</text>
+  <text x="375" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO44</text>
+  <text x="375" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">RXD0</text>
+
+  <!-- Wire 8: IO19 — USB D- -->
+  <rect x="402" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="425" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">8</text>
+  <text x="425" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO19</text>
+  <text x="425" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">USB D-</text>
+
+  <!-- Wire 9: IO3 -->
+  <rect x="452" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="475" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">9</text>
+  <text x="475" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO3</text>
+  <text x="475" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 10: IO14 -->
+  <rect x="502" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="525" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">10</text>
+  <text x="525" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO14</text>
+  <text x="525" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 11: IO4 -->
+  <rect x="552" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="575" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">11</text>
+  <text x="575" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO4</text>
+  <text x="575" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 12: IO13 -->
+  <rect x="602" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="625" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">12</text>
+  <text x="625" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO13</text>
+  <text x="625" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 13: IO5 — I²C SDA -->
+  <rect x="652" y="108" width="46" height="194" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1" rx="2"/>
+  <text x="675" y="130" text-anchor="middle" font-size="12" fill="#0f5e6c" font-weight="700">13</text>
+  <text x="675" y="148" text-anchor="middle" font-size="10" fill="#0f5e6c" font-weight="600">IO5</text>
+  <text x="675" y="165" text-anchor="middle" font-size="9" fill="#0f5e6c">I²C SDA</text>
+  <text x="675" y="178" text-anchor="middle" font-size="9" fill="#0f5e6c">IMU</text>
+
+  <!-- Wire 14: IO12 -->
+  <rect x="702" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="725" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">14</text>
+  <text x="725" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO12</text>
+  <text x="725" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 15: IO6 — I²C SCL -->
+  <rect x="752" y="108" width="46" height="194" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1" rx="2"/>
+  <text x="775" y="130" text-anchor="middle" font-size="12" fill="#0f5e6c" font-weight="700">15</text>
+  <text x="775" y="148" text-anchor="middle" font-size="10" fill="#0f5e6c" font-weight="600">IO6</text>
+  <text x="775" y="165" text-anchor="middle" font-size="9" fill="#0f5e6c">I²C SCL</text>
+  <text x="775" y="178" text-anchor="middle" font-size="9" fill="#0f5e6c">IMU</text>
+
+  <!-- Wire 16: IO11 -->
+  <rect x="802" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="825" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">16</text>
+  <text x="825" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO11</text>
+  <text x="825" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 17: IO7 -->
+  <rect x="852" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="875" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">17</text>
+  <text x="875" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO7</text>
+  <text x="875" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 18: IO10 -->
+  <rect x="902" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="925" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">18</text>
+  <text x="925" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO10</text>
+  <text x="925" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 19: IO8 -->
+  <rect x="952" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="975" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">19</text>
+  <text x="975" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO8</text>
+  <text x="975" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Wire 20: IO9 -->
+  <rect x="1002" y="108" width="46" height="194" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="1025" y="130" text-anchor="middle" font-size="12" fill="#6c757d" font-weight="700">20</text>
+  <text x="1025" y="148" text-anchor="middle" font-size="10" fill="#6c757d" font-weight="600">IO9</text>
+  <text x="1025" y="165" text-anchor="middle" font-size="9" fill="#adb5bd">--</text>
+
+  <!-- Header row each wire comes from (odd = bottom row, even = top row) -->
+  <text x="75" y="324" text-anchor="middle" font-size="8" fill="#cc4242">Bottom</text>
+  <text x="125" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="175" y="324" text-anchor="middle" font-size="8" fill="#212529">Bottom</text>
+  <text x="225" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="275" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Bottom</text>
+  <text x="325" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="375" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Bottom</text>
+  <text x="425" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="475" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Bottom</text>
+  <text x="525" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="575" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Bottom</text>
+  <text x="625" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="675" y="324" text-anchor="middle" font-size="8" fill="#1a7a8a">Bottom</text>
+  <text x="725" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="775" y="324" text-anchor="middle" font-size="8" fill="#1a7a8a">Bottom</text>
+  <text x="825" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="875" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Bottom</text>
+  <text x="925" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+  <text x="975" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Bottom</text>
+  <text x="1025" y="324" text-anchor="middle" font-size="8" fill="#6c757d">Top</text>
+
+  <!-- =============== HEADER TOP VIEW =============== -->
+  <rect x="190" y="342" width="720" height="140" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+  <text x="550" y="362" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">Board Header — Top View</text>
+  <text x="550" y="377" text-anchor="middle" font-size="9" fill="#6c757d">Looking down at the board: Pin 1 is bottom-left, Pin 2 directly above it</text>
+  <text x="206" y="432" font-size="10" fill="#495057" font-weight="600">← USB-C</text>
+  <text x="894" y="410" text-anchor="end" font-size="8" fill="#6c757d">Top row</text>
+  <text x="894" y="456" text-anchor="end" font-size="8" fill="#6c757d">Bottom row</text>
+
+  <rect x="268" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="292" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">2</text>
+  <text x="292" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">5V</text>
+  <rect x="268" y="432" width="48" height="40" fill="#ff5453" stroke="#cc4242" stroke-width="1" rx="3"/>
+  <text x="292" y="448" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">1</text>
+  <text x="292" y="463" text-anchor="middle" font-size="9" fill="#fff" font-weight="600">3.3V</text>
+  <rect x="322" y="386" width="48" height="40" fill="#1a1a1a" stroke="#000000" stroke-width="1" rx="3"/>
+  <text x="346" y="402" text-anchor="middle" font-size="11" fill="#dee2e6" font-weight="700">4</text>
+  <text x="346" y="417" text-anchor="middle" font-size="9" fill="#dee2e6" font-weight="600">GND</text>
+  <rect x="322" y="432" width="48" height="40" fill="#1a1a1a" stroke="#000000" stroke-width="1" rx="3"/>
+  <text x="346" y="448" text-anchor="middle" font-size="11" fill="#dee2e6" font-weight="700">3</text>
+  <text x="346" y="463" text-anchor="middle" font-size="9" fill="#dee2e6" font-weight="600">GND</text>
+  <rect x="376" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="400" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">6</text>
+  <text x="400" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO20</text>
+  <rect x="376" y="432" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="400" y="448" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">5</text>
+  <text x="400" y="463" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO43</text>
+  <rect x="430" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="454" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">8</text>
+  <text x="454" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO19</text>
+  <rect x="430" y="432" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="454" y="448" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">7</text>
+  <text x="454" y="463" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO44</text>
+  <rect x="484" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="508" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">10</text>
+  <text x="508" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO14</text>
+  <rect x="484" y="432" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="508" y="448" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">9</text>
+  <text x="508" y="463" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO3</text>
+  <rect x="538" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="562" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">12</text>
+  <text x="562" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO13</text>
+  <rect x="538" y="432" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="562" y="448" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">11</text>
+  <text x="562" y="463" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO4</text>
+  <rect x="592" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="616" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">14</text>
+  <text x="616" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO12</text>
+  <rect x="592" y="432" width="48" height="40" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1" rx="3"/>
+  <text x="616" y="448" text-anchor="middle" font-size="11" fill="#0f5e6c" font-weight="700">13</text>
+  <text x="616" y="463" text-anchor="middle" font-size="9" fill="#0f5e6c" font-weight="600">IO5</text>
+  <rect x="646" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="670" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">16</text>
+  <text x="670" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO11</text>
+  <rect x="646" y="432" width="48" height="40" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1" rx="3"/>
+  <text x="670" y="448" text-anchor="middle" font-size="11" fill="#0f5e6c" font-weight="700">15</text>
+  <text x="670" y="463" text-anchor="middle" font-size="9" fill="#0f5e6c" font-weight="600">IO6</text>
+  <rect x="700" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="724" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">18</text>
+  <text x="724" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO10</text>
+  <rect x="700" y="432" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="724" y="448" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">17</text>
+  <text x="724" y="463" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO7</text>
+  <rect x="754" y="386" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="778" y="402" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">20</text>
+  <text x="778" y="417" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO9</text>
+  <rect x="754" y="432" width="48" height="40" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="3"/>
+  <text x="778" y="448" text-anchor="middle" font-size="11" fill="#6c757d" font-weight="700">19</text>
+  <text x="778" y="463" text-anchor="middle" font-size="9" fill="#6c757d" font-weight="600">IO8</text>
+  <g transform="translate(0,150)">
+
+  <!-- =============== GROUPED BY DEVICE =============== -->
+  <rect y="348" width="1100" height="3" fill="#52a441"/>
+  <text x="550" y="374" text-anchor="middle" font-size="16" font-weight="700" fill="#212529">Wires Grouped by Device</text>
+  <text x="550" y="390" text-anchor="middle" font-size="10" fill="#6c757d">Which ribbon cable wires to connect per device (wire number = pin number)</text>
+
+  <!-- DFRobot SEN0253 IMU -->
+  <rect x="40" y="408" width="320" height="170" fill="#ffffff" stroke="#1a7a8a" stroke-width="2" rx="6"/>
+  <text x="200" y="432" text-anchor="middle" font-size="13" font-weight="700" fill="#1a7a8a">IMU — DFRobot SEN0253</text>
+  <text x="200" y="448" text-anchor="middle" font-size="9" fill="#6c757d">BNO055 + BMP280 | Gravity 4-pin I²C</text>
+
+  <text x="60" y="472" font-size="11" fill="#6c757d">Wire 1</text>
+  <text x="130" y="472" font-size="11" fill="#cc4242" font-weight="600">3.3V</text>
+  <text x="195" y="472" font-size="11" fill="#212529">+ (VCC, red)</text>
+
+  <text x="60" y="492" font-size="11" fill="#6c757d">Wire 3</text>
+  <text x="130" y="492" font-size="11" fill="#212529" font-weight="600">GND</text>
+  <text x="195" y="492" font-size="11" fill="#212529">− (GND, black)</text>
+
+  <text x="60" y="512" font-size="11" fill="#6c757d">Wire 13</text>
+  <text x="130" y="512" font-size="11" fill="#1a7a8a" font-weight="600">IO5</text>
+  <text x="195" y="512" font-size="11" fill="#212529">D (SDA)</text>
+
+  <text x="60" y="532" font-size="11" fill="#6c757d">Wire 15</text>
+  <text x="130" y="532" font-size="11" fill="#1a7a8a" font-weight="600">IO6</text>
+  <text x="195" y="532" font-size="11" fill="#212529">C (SCL)</text>
+
+  <text x="60" y="560" font-size="10" fill="#6c757d">Module accepts 3.3–5V; 3.3V keeps logic levels native</text>
+
+  <!-- I2C bus -->
+  <rect x="390" y="408" width="320" height="170" fill="#ffffff" stroke="#48e6fe" stroke-width="2" rx="6"/>
+  <text x="550" y="432" text-anchor="middle" font-size="13" font-weight="700" fill="#1a7a8a">I²C Bus</text>
+  <text x="550" y="448" text-anchor="middle" font-size="9" fill="#6c757d">SDA = IO5, SCL = IO6</text>
+
+  <text x="410" y="472" font-size="11" fill="#6c757d">0x28</text>
+  <text x="470" y="472" font-size="11" fill="#212529">BNO055 — pitch / roll</text>
+
+  <text x="410" y="492" font-size="11" fill="#adb5bd">0x76</text>
+  <text x="470" y="492" font-size="11" fill="#adb5bd">BMP280 — on module, not read</text>
+
+  <text x="410" y="522" font-size="10" fill="#6c757d">Pull-ups are on the SEN0253 module</text>
+  <text x="410" y="540" font-size="10" fill="#6c757d">Mount flat on the floor or on a left / right</text>
+  <text x="410" y="556" font-size="10" fill="#6c757d">wall — orientation is set over CAN (0x36)</text>
+
+  <!-- Onboard terminals (not on the ribbon) -->
+  <rect x="740" y="408" width="320" height="170" fill="#ffffff" stroke="#52a441" stroke-width="2" rx="6"/>
+  <text x="900" y="432" text-anchor="middle" font-size="13" font-weight="700" fill="#3d7d31">Board Terminals (not ribbon)</text>
+  <text x="900" y="448" text-anchor="middle" font-size="9" fill="#6c757d">Waveshare ESP32-S3-RS485-CAN screw terminals</text>
+
+  <text x="760" y="472" font-size="11" fill="#cc4242" font-weight="600">7–36V</text>
+  <text x="840" y="472" font-size="11" fill="#212529">Vehicle 12V supply</text>
+
+  <text x="760" y="492" font-size="11" fill="#b86e00" font-weight="600">CAN H</text>
+  <text x="840" y="492" font-size="11" fill="#212529">TrailCurrent CAN bus</text>
+
+  <text x="760" y="512" font-size="11" fill="#3d7d31" font-weight="600">CAN L</text>
+  <text x="840" y="512" font-size="11" fill="#212529">TrailCurrent CAN bus</text>
+
+  <text x="760" y="540" font-size="10" fill="#6c757d">Onboard isolated transceiver (TJA1051)</text>
+  <text x="760" y="556" font-size="10" fill="#6c757d">TX = GPIO15, RX = GPIO16, 500 kbps</text>
+
+  <!-- =============== LEGEND =============== -->
+  <rect x="40" y="598" width="1020" height="60" fill="#ffffff" stroke="#dee2e6" stroke-width="1" rx="4"/>
+  <text x="70" y="620" font-size="11" font-weight="700" fill="#212529">Legend:</text>
+  <rect x="130" y="608" width="14" height="14" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1" rx="2"/>
+  <text x="150" y="620" font-size="10" fill="#495057">I²C (IO5 / IO6)</text>
+  <rect x="268" y="608" width="14" height="14" fill="#ff5453" rx="2"/>
+  <text x="288" y="620" font-size="10" fill="#495057">3.3V / Red Stripe (Pin 1)</text>
+  <rect x="448" y="608" width="14" height="14" fill="#1a1a1a" rx="2"/>
+  <text x="468" y="620" font-size="10" fill="#495057">Ground</text>
+  <rect x="540" y="608" width="14" height="14" fill="#dee2e6" stroke="#c0c5cb" stroke-width="1" rx="2"/>
+  <text x="560" y="620" font-size="10" fill="#495057">Unused / reserved</text>
+
+  <text x="70" y="646" font-size="10" fill="#b86e00" font-weight="600">Note:</text>
+  <text x="108" y="646" font-size="10" fill="#6c757d">Only wires 1, 3, 13 and 15 are used. Wire 4 is a second GND (same net). 5V (wire 2) is not needed — the IMU runs at 3.3V.</text>
+
+  <!-- Footer -->
+  <rect y="670" width="1100" height="30" fill="#ffffff"/>
+  <rect y="670" width="1100" height="1" fill="#dee2e6"/>
+  <text x="24" y="689" font-size="9" fill="#52a441" font-weight="600">TrailCurrent</text>
+  <text x="110" y="689" font-size="9" fill="#6c757d">Plateau v1.0 — IDC 2x10 ribbon cable pinout (standard odd/even row interleave)</text>
+
+  </g>
+</svg>

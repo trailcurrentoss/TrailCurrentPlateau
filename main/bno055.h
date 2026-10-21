@@ -5,7 +5,7 @@
 #include "esp_err.h"
 #include "driver/i2c_master.h"
 
-// BNO055 I2C address
+// DFRobot SEN0253 = Bosch BNO055 9-DOF absolute orientation sensor (+ BMP280, unused).
 #define BNO055_ADDR 0x28
 
 // Operating modes
@@ -51,44 +51,28 @@ typedef enum {
 } bno055_mount_t;
 
 /**
- * Initialize I2C bus and probe for BNO055.
- * Returns ESP_OK if sensor detected and initialized.
+ * Attach the BNO055 to an already-initialized I2C master bus.
+ * Returns ESP_OK if the chip ID probe succeeds.
  */
-esp_err_t bno055_init(int sda_pin, int scl_pin);
+esp_err_t bno055_init(i2c_master_bus_handle_t bus);
 
-/**
- * Check if the BNO055 is responding on I2C.
- */
+/** Check if the BNO055 is still responding on I2C. */
 bool bno055_is_connected(void);
 
-/**
- * Set operating mode (CONFIG, ACCONLY, NDOF, etc.).
- */
+/** Set operating mode (CONFIG, ACCONLY, NDOF, etc.). */
 esp_err_t bno055_set_mode(uint8_t mode);
 
-/**
- * Apply axis remapping for the given mounting orientation,
- * then switch to target_mode.
- */
+/** Apply axis remapping for the given mounting orientation, then switch to target_mode. */
 esp_err_t bno055_apply_axis_remap(bno055_mount_t mount, uint8_t target_mode);
 
-/**
- * Read accelerometer vector in m/s^2.
- */
+/** Read accelerometer vector in m/s². */
 esp_err_t bno055_read_accel(bno055_vec3_t *out);
 
-/**
- * Read calibration status.
- */
+/** Read calibration status. */
 esp_err_t bno055_get_cal_status(bno055_cal_status_t *out);
 
-/**
- * Read calibration offsets from the sensor.
- */
+/** Read calibration offsets from the sensor. */
 esp_err_t bno055_get_offsets(bno055_offsets_t *out);
 
-/**
- * Write calibration offsets to the sensor.
- * Sensor must be in CONFIG mode before calling.
- */
+/** Write calibration offsets to the sensor. Sensor must be in CONFIG mode. */
 esp_err_t bno055_set_offsets(const bno055_offsets_t *offsets);
